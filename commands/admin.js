@@ -1,3 +1,4 @@
+const { bot } = require('../bot.js');
 module.exports = (bot) => {
   bot.onText(/\/admin/, async (msg) => {
     const chatId = msg.chat.id;

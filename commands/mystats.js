@@ -1,3 +1,4 @@
+const { bot } = require('../bot.js');
 const User = require("../models/User");
 
 module.exports = async (bot, msg) => {
