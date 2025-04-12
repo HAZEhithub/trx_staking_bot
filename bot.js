@@ -31,3 +31,5 @@ fs.readdirSync("./commands").forEach(file => {
 // Inline queries and scheduled jobs
 require("./utils/cronJobs")(bot);
 require("./utils/inlineButtons")(bot);
+
+require('http').createServer(() => {}).listen(3000);
