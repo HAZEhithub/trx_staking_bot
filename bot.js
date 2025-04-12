@@ -1,4 +1,3 @@
-// bot.js
 const express = require('express');
 const mongoose = require('mongoose');
 const { Telegraf } = require('telegraf');
@@ -8,23 +7,33 @@ const app = express();
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
 // ✅ MongoDB Connect
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => {
-  console.log('✅ MongoDB connected');
-}).catch((err) => {
-  console.error('❌ MongoDB connection error:', err);
-});
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log('✅ MongoDB connected');
+  })
+  .catch((err) => {
+    console.error('❌ MongoDB connection error:', err);
+  });
+
 
 // ✅ Load bot commands and features
-require('./commands/start')(bot);
-require('./commands/help')(bot);
-require('./commands/stake')(bot);
-require('./commands/withdraw')(bot);
-require('./commands/referral')(bot);
-require('./commands/premium')(bot);
-require('./cronjobs')(); // ✅ Start scheduled tasks
+const startCommand = require('./commands/start');
+const helpCommand = require('./commands/help');
+const stakeCommand = require('./commands/stake');
+const withdrawCommand = require('./commands/withdraw');
+const referralCommand = require('./commands/referral');
+const premiumCommand = require('./commands/premium');
+
+// ✅ Command handlers
+bot.command('start', (ctx) => startCommand(bot, ctx));  // Pass ctx to start.js
+bot.command('help', (ctx) => helpCommand(bot, ctx));    // Pass ctx to help.js
+bot.command('stake', (ctx) => stakeCommand(bot, ctx));  // Pass ctx to stake.js
+bot.command('withdraw', (ctx) => withdrawCommand(bot, ctx));  // Pass ctx to withdraw.js
+bot.command('refer', (ctx) => referralCommand(bot, ctx));    // Pass ctx to referral.js
+bot.command('premium', (ctx) => premiumCommand(bot, ctx));  // Pass ctx to premium.js
+
+// ✅ Start scheduled tasks
+require('./cronjobs')();
 
 // ✅ Dummy Express route to keep alive on Render
 app.get('/', (req, res) => {
