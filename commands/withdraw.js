@@ -1,22 +1,19 @@
-const User = require("../models/User");
+module.exports = (bot, ctx) => {
+  const userId = ctx.from.id;
 
-module.exports = async (bot, msg, match) => {
-  const chatId = msg.chat.id;
-  const amount = parseFloat(match[1]);
+  ctx.reply(`💸 *Withdrawal Process*
 
-  const user = await User.findOne({ telegramId: chatId.toString() });
+To withdraw your earnings, send the amount you want to withdraw along with your wallet address. For example:
 
-  if (!user || !user.wallet) {
-    return bot.sendMessage(chatId, "❌ Set your TRX wallet first with /setwallet.");
-  }
+/withdraw 100 TRX
 
-  if (user.balance < amount || amount < 1) {
-    return bot.sendMessage(chatId, "❌ Insufficient balance or invalid amount.");
-  }
-
-  user.balance -= amount;
-  await user.save();
-
-  // Just a simulation
-  bot.sendMessage(chatId, `✅ Withdrawal of ${amount} TRX requested to ${user.wallet}`);
+Please note that withdrawal fees may apply.`, {
+    parse_mode: 'Markdown',
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "💰 Stake More", callback_data: "stake_more" }],
+        [{ text: "📈 View Your Stats", callback_data: "view_stats" }]
+      ]
+    }
+  });
 };

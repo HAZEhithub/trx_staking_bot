@@ -1,17 +1,26 @@
-module.exports = (bot) => {
-  bot.command('help', (msg) => {
-    const helpMessage = `
-    🤖 Here are the available commands:
+module.exports = (bot, ctx) => {
+  ctx.reply(`❓ *Help Menu*
 
-    /start - Get started with the bot
-    /stake - Stake TRX
-    /balance - Check your balance
-    /withdraw - Withdraw your earnings
-    /refer - Get your referral link
-    /premium - Upgrade to Premium
+Here are some commands you can use:
 
-    Use these commands to interact with the bot.
-    `;
-    bot.sendMessage(msg.chat.id, helpMessage);
+/start - Introduction & how it works
+/stake - Begin staking TRX
+/balance - Show your staking status
+/withdraw - Take out your earnings
+/setwallet - Set your TRX withdrawal wallet
+/refer - Share to earn from referrals
+/premium - Get premium returns
+
+For assistance, please reach out to our support group.
+
+Select an option below to get started or get help!`, {
+    parse_mode: 'Markdown',
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "📊 View Balance", callback_data: "view_balance" }],
+        [{ text: "💰 Stake TRX", callback_data: "stake_more" }],
+        [{ text: "💸 Withdraw Earnings", callback_data: "withdraw" }]
+      ]
+    }
   });
 };

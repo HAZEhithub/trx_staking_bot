@@ -1,18 +1,31 @@
-const User = require("../models/User");
+const User = require('../models/User');
 
-module.exports = async (bot, msg, match) => {
-  const chatId = msg.chat.id;
-  const trx = match[1];
+module.exports = (bot, ctx) => {
+  const userId = ctx.from.id;
+  const wallet = ctx.message.text.split(' ')[1];
 
-  if (!trx || !trx.startsWith("T") || trx.length < 30) {
-    return bot.sendMessage(chatId, "❌ Invalid TRX address. Try again.");
+  if (!wallet) {
+    return ctx.reply('❌ Usage: /setwallet YOUR_TRX_WALLET');
   }
 
-  const user = await User.findOneAndUpdate(
-    { telegramId: chatId.toString() },
-    { wallet: trx },
-    { upsert: true, new: true }
-  );
-
-  bot.sendMessage(chatId, `✅ TRX Address saved: ${trx}`);
+  User.findOneAndUpdate({ telegramId: userId }, { wallet }, { upsert: true, new: true })
+    .then(() => {
+      ctx.reply(`✅ Your TRX wallet address has been set to:
+\`\`\`
+${wallet}
+\`\`\`
+Make sure it's correct for future withdrawals.`, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "💰 Stake More", callback_data: "stake_more" }],
+            [{ text: "💸 Withdraw Earnings", callback_data: "withdraw" }]
+          ]
+        }
+      });
+    })
+    .catch(err => {
+      console.error(err);
+      ctx.reply('❌ Error saving wallet address. Please try again later.');
+    });
 };

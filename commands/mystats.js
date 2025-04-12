@@ -9,10 +9,18 @@ module.exports = async (bot, msg) => {
   }
 
   bot.sendMessage(chatId, `
-📊 Your Stats:
+📊 *Your Stats*:
 👜 Wallet: ${user.wallet || "Not set"}
 💰 Balance: ${user.balance} TRX
 🎁 Referrals: ${user.referrals}
-⭐ Premium: ${user.premium ? "Yes" : "No"}
-  `);
+⭐ Premium: ${user.premium ? "Yes" : "No"}`,
+  {
+    parse_mode: 'Markdown',
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "💰 Stake More", callback_data: "stake_more" }],
+        [{ text: "💸 Withdraw Earnings", callback_data: "withdraw" }]
+      ]
+    }
+  });
 };

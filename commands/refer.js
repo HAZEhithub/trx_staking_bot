@@ -1,19 +1,16 @@
 module.exports = (bot, ctx) => {
-  ctx.reply(`💎 *Premium Membership*
+  const userId = ctx.from.id;
+  const referralLink = `https://t.me/${bot.botInfo.username}?start=${userId}`;
+  ctx.reply(`📢 *Referral Program*
 
-Unlock higher staking rewards and faster withdrawals!
+Invite your friends and earn bonus TRX!
 
-💰 Premium Price: $45 (paid in TRX)
-Send to:
-\`\`\`
-TBP6FPZPon1BqdTYcUpBKoMzk6729jpctN
-\`\`\`
+🔗 Your referral link:
+${referralLink}
 
-Once paid, premium will be activated within minutes.
+You earn a commission whenever they stake. Use your influence to earn more!
 
-Need assistance? Message support.
-
-To activate premium, click below and follow the instructions.`, {
+Start inviting now by clicking below!`, {
     parse_mode: 'Markdown',
     reply_markup: {
       inline_keyboard: [

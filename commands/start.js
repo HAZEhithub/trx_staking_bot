@@ -1,19 +1,39 @@
 module.exports = (bot, ctx) => {
-  // Check if ctx and ctx.from are valid
-  if (ctx && ctx.from && ctx.from.first_name) {
-    const welcome = `👋 Welcome ${ctx.from.first_name}!
-💼 Earn TRX daily by staking with us!
+  const firstName = ctx.from.first_name;
 
-Use:
-/stake - Stake TRX
-/balance - Check balance
-/withdraw - Withdraw earnings
-/refer - Share your referral link
-/premium - Upgrade to Premium`;
+  // Welcome message with buttons
+  ctx.reply(
+    `👋 Welcome ${firstName}!
 
-    ctx.reply(welcome);  // Use ctx.reply() instead of bot.sendMessage
-  } else {
-    console.error("Error: ctx or ctx.from is undefined");
-    ctx.reply("Sorry, something went wrong. Please try again.");
-  }
+💼 *Earn TRX daily* by staking with us!
+Here's what you can do:
+
+- /stake - Stake TRX and start earning
+- /balance - View your staked balance and earnings
+- /withdraw - Withdraw your earnings to your wallet
+- /setwallet - Set your TRX wallet address for withdrawals
+- /refer - Get your referral link and earn bonuses
+- /premium - Learn about premium features for higher returns
+
+_We guide you at every step!_`,
+    {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "💰 Stake TRX", callback_data: "start_staking" },
+            { text: "📊 View Balance", callback_data: "view_balance" }
+          ],
+          [
+            { text: "💸 Withdraw Earnings", callback_data: "withdraw" },
+            { text: "🔗 Get Referral Link", callback_data: "refer" }
+          ],
+          [
+            { text: "🌟 Premium Features", callback_data: "premium" },
+            { text: "🔄 Update Wallet", callback_data: "update_wallet" }
+          ]
+        ]
+      }
+    }
+  );
 };

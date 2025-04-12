@@ -1,19 +1,17 @@
-module.exports = (bot) => {
-  bot.onText(/\/stake/, async (msg) => {
-    const chatId = msg.chat.id;
-
-    const message = `
-💰 *Stake TRX Now!*
-
-Send your TRX to the following address:
-
-*TDw8ohi69oCU1LN76uS9UMhTh94Dao81jW*
-
-Once sent, the staking will be automatically recorded and you'll start earning based on the plan.
-
-Use /balance to check your earnings.
-    `;
-
-    bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
-  });
+module.exports = (bot, msg) => {
+  bot.sendMessage(msg.chat.id, 
+    "💰 *Staking Instructions*\n\n" +
+    "To stake your TRX, simply send the amount you want to stake. For example:\n" +
+    "/stake 100 TRX\n\n" +
+    "Remember, the more you stake, the greater your rewards. You will also unlock premium features for better rewards.\n\n" +
+    "Click below to start staking!", {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "💰 Start Staking", callback_data: "start_staking" }],
+          [{ text: "📈 View Stats", callback_data: "view_stats" }]
+        ]
+      }
+    }
+  );
 };
