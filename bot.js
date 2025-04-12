@@ -1,49 +1,47 @@
-require("dotenv").config();
-const TelegramBot = require("node-telegram-bot-api");
-const mongoose = require("mongoose");
-const fs = require("fs");
-const express = require("express");
+// bot.js
+const express = require('express');
+const mongoose = require('mongoose');
+const { Telegraf } = require('telegraf');
+require('dotenv').config();
+
 const app = express();
+const bot = new Telegraf(process.env.BOT_TOKEN);
 
-const BOT_TOKEN = process.env.BOT_TOKEN;
-const URL = process.env.RENDER_EXTERNAL_URL; // set this in Render env vars
-
-const bot = new TelegramBot(BOT_TOKEN, { webHook: { port: process.env.PORT || 10000 } });
-
-// Set webhook to your Render URL + /bot<BOT_TOKEN>
-bot.setWebHook(`${URL}/bot${BOT_TOKEN}`);
-
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.error("❌ Mongo Error:", err));
-
-// Auto-load commands
-fs.readdirSync("./commands").forEach(file => {
-  const command = require(`./commands/${file}`);
-  if (typeof command === "function") {
-    bot.onText(new RegExp("/" + file.replace(".js", ""), "i"), (msg, match) => {
-      command(bot, msg, match);
-    });
-  }
+// ✅ MongoDB Connect
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+}).then(() => {
+  console.log('✅ MongoDB connected');
+}).catch((err) => {
+  console.error('❌ MongoDB connection error:', err);
 });
 
-// Load buttons and cron
-require("./utils/cronJobs")(bot);
-require("./utils/inlineButtons")(bot);
+// ✅ Load bot commands and features
+require('./commands/start')(bot);
+require('./commands/help')(bot);
+require('./commands/stake')(bot);
+require('./commands/withdraw')(bot);
+require('./commands/referral')(bot);
+require('./commands/premium')(bot);
+require('./cronjobs')(); // ✅ Start scheduled tasks
 
-// Webhook endpoint (must be POST)
-app.use(express.json());
-app.post(`/bot${BOT_TOKEN}`, (req, res) => {
-  bot.processUpdate(req.body);
-  res.sendStatus(200);
+// ✅ Dummy Express route to keep alive on Render
+app.get('/', (req, res) => {
+  res.send('🤖 TRX Staking Bot is alive!');
 });
 
-// Health check
-app.get("/healthz", (req, res) => {
-  res.status(200).send("OK");
-});
-
+// ✅ Render-compatible port
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`✅ Express running on ${PORT}`);
 });
+
+// ✅ Start bot with polling
+bot.launch().then(() => {
+  console.log('✅ Bot launched with polling');
+});
+
+// ✅ Graceful shutdown
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
