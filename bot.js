@@ -3,11 +3,13 @@ const TelegramBot = require("node-telegram-bot-api");
 const mongoose = require("mongoose");
 const fs = require("fs");
 const path = require("path");
+const express = require("express");
+
+const app = express();
+const PORT = process.env.PORT || 3000;
 
 // Debug env value
 console.log("✅ Loaded MONGO_URI:", process.env.MONGO_URI);
-
-const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
 // MongoDB connect
 mongoose.connect(process.env.MONGO_URI)
@@ -17,6 +19,15 @@ mongoose.connect(process.env.MONGO_URI)
   .catch((err) => {
     console.error("❌ Mongo Error:", err);
   });
+
+// Setup bot in webhook mode
+const bot = new TelegramBot(process.env.BOT_TOKEN);
+bot.setWebHook(`${process.env.RENDER_EXTERNAL_URL}/bot${process.env.BOT_TOKEN}`);
+app.use(express.json());
+app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
+  bot.processUpdate(req.body);
+  res.sendStatus(200);
+});
 
 // Load commands
 fs.readdirSync("./commands").forEach(file => {
@@ -32,14 +43,12 @@ fs.readdirSync("./commands").forEach(file => {
 require("./utils/cronJobs")(bot);
 require("./utils/inlineButtons")(bot);
 
-const http = require('http');
-
-const server = http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Service is running');
+// Optional home route
+app.get("/", (req, res) => {
+  res.send("🔥 TRX Staking Bot is live via webhook!");
 });
 
-server.listen(3000, () => {
-  console.log('Server running on port 3000');
+// Start server
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
 });
-
