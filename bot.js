@@ -32,32 +32,56 @@ const premiumCommand = require('./commands/premium');
 const balanceCommand = require('./commands/balance');
 const setWalletCommand = require('./commands/setwallet');
 
-// ✅ Setup Commands with Context
-bot.command('start', (ctx) => startCommand(bot, ctx));
-bot.command('help', (ctx) => helpCommand(bot, ctx));
-bot.command('stake', (ctx) => stakeCommand(bot, ctx));
-bot.command('withdraw', (ctx) => withdrawCommand(bot, ctx));
-bot.command('refer', (ctx) => referralCommand(bot, ctx));
-bot.command('referral', (ctx) => referralCommand(bot, ctx)); // for misspelling
-bot.command('premium', (ctx) => premiumCommand(bot, ctx));
-bot.command('balance', (ctx) => balanceCommand(bot, ctx));
-bot.command('setwallet', (ctx) => setWalletCommand(bot, ctx));
+// ✅ Telegraf Commands using Context
+bot.start((ctx) => startCommand(ctx));
+bot.help((ctx) => helpCommand(ctx));
+bot.command('stake', (ctx) => stakeCommand(ctx));
+bot.command('withdraw', (ctx) => withdrawCommand(ctx));
+bot.command('refer', (ctx) => referralCommand(ctx));
+bot.command('referral', (ctx) => referralCommand(ctx));
+bot.command('premium', (ctx) => premiumCommand(ctx));
+bot.command('balance', (ctx) => balanceCommand(ctx));
+bot.command('setwallet', (ctx) => setWalletCommand(ctx));
 
-// ✅ Dummy Route for Render Keep-Alive
+// ✅ Inline Button Callback Handlers (Handled inside commands like start.js)
+bot.on('callback_query', async (ctx) => {
+  const data = ctx.callbackQuery.data;
+  try {
+    if (data === 'stake') {
+      await stakeCommand(ctx);
+    } else if (data === 'withdraw') {
+      await withdrawCommand(ctx);
+    } else if (data === 'balance') {
+      await balanceCommand(ctx);
+    } else if (data === 'premium') {
+      await premiumCommand(ctx);
+    } else if (data === 'referral') {
+      await referralCommand(ctx);
+    } else if (data === 'setwallet') {
+      await setWalletCommand(ctx);
+    }
+    await ctx.answerCbQuery(); // ✅ Close loading animation
+  } catch (error) {
+    console.error('❌ Callback Error:', error);
+    await ctx.reply('⚠️ Something went wrong. Please try again.');
+  }
+});
+
+// ✅ Dummy Route for Keep-Alive
 app.get('/', (req, res) => {
   res.send('🤖 TRX Staking Bot is up and running!');
 });
 
-// ✅ Cron Jobs for Staking Updates
+// ✅ Load Cron Jobs
 require('./cronjobs')();
 
-// ✅ Express Server
+// ✅ Express Web Server
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`✅ Express running on port ${PORT}`);
 });
 
-// ✅ Start Telegram Bot
+// ✅ Launch the Telegram Bot
 bot.launch().then(() => {
   console.log('✅ Bot launched and listening on Telegram');
 });

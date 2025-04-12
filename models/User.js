@@ -12,6 +12,21 @@ const userSchema = new mongoose.Schema({
   referralBonus: { type: Number, default: 0 }, // Total referral bonus earned
   joinedAt: { type: Date, default: Date.now }, // Date when the user joined
   lastActive: { type: Date }, // Tracks last time the user interacted with the bot
+  transactionHistory: [
+    {
+      type: String, // Type of transaction: "deposit", "withdrawal"
+      amount: Number, // Amount of TRX in the transaction
+      date: { type: Date, default: Date.now }, // Transaction date
+      status: { type: String, enum: ['pending', 'completed'], default: 'pending' }, // Transaction status
+    }
+  ],
+  stakingHistory: [
+    {
+      amount: Number, // Amount of TRX staked
+      interest: Number, // Amount of interest earned
+      date: { type: Date, default: Date.now }, // Date of staking
+    }
+  ]
 });
 
 module.exports = mongoose.model("User", userSchema);

@@ -1,7 +1,6 @@
-module.exports = (bot, ctx) => {
+module.exports = (ctx) => {
   const firstName = ctx.from.first_name;
 
-  // Welcome message with buttons
   ctx.reply(
     `👋 Welcome ${firstName}!
 
@@ -21,16 +20,16 @@ _We guide you at every step!_`,
       reply_markup: {
         inline_keyboard: [
           [
-            { text: "💰 Stake TRX", callback_data: "start_staking" },
-            { text: "📊 View Balance", callback_data: "view_balance" }
+            { text: "💰 Stake TRX", callback_data: "stake" },
+            { text: "📊 View Balance", callback_data: "balance" }
           ],
           [
             { text: "💸 Withdraw Earnings", callback_data: "withdraw" },
-            { text: "🔗 Get Referral Link", callback_data: "refer" }
+            { text: "🔗 Get Referral Link", callback_data: "referral" }
           ],
           [
             { text: "🌟 Premium Features", callback_data: "premium" },
-            { text: "🔄 Update Wallet", callback_data: "update_wallet" }
+            { text: "🔄 Update Wallet", callback_data: "setwallet" }
           ]
         ]
       }
