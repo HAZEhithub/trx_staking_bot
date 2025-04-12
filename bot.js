@@ -1,91 +1,66 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const { Telegraf } = require('telegraf');
-require('dotenv').config();
+const { Telegraf } = require("telegraf");
+const mongoose = require("mongoose");
+const express = require("express");
+const cronJobs = require("./cronjobs");
+require("dotenv").config();
 
 const app = express();
+const PORT = process.env.PORT || 10000;
+
+// === ✅ Initialize Bot ===
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-// ✅ MongoDB Connection
-const mongoUri = process.env.MONGO_URI;
-if (!mongoUri) {
-  console.error('❌ MongoDB URI is missing in environment variables.');
-  process.exit(1);
-}
-
-mongoose.connect(mongoUri)
-  .then(() => {
-    console.log('✅ MongoDB connected');
-  })
-  .catch((err) => {
-    console.error('❌ MongoDB connection error:', err);
-    process.exit(1);
-  });
-
-// ✅ Import Command Handlers
-const startCommand = require('./commands/start');
-const helpCommand = require('./commands/help');
-const stakeCommand = require('./commands/stake');
-const withdrawCommand = require('./commands/withdraw');
-const referralCommand = require('./commands/referral');
-const premiumCommand = require('./commands/premium');
-const balanceCommand = require('./commands/balance');
-const setWalletCommand = require('./commands/setwallet');
-
-// ✅ Telegraf Commands using Context
-bot.start((ctx) => startCommand(ctx));
-bot.help((ctx) => helpCommand(ctx));
-bot.command('stake', (ctx) => stakeCommand(ctx));
-bot.command('withdraw', (ctx) => withdrawCommand(ctx));
-bot.command('refer', (ctx) => referralCommand(ctx));
-bot.command('referral', (ctx) => referralCommand(ctx));
-bot.command('premium', (ctx) => premiumCommand(ctx));
-bot.command('balance', (ctx) => balanceCommand(ctx));
-bot.command('setwallet', (ctx) => setWalletCommand(ctx));
-
-// ✅ Inline Button Callback Handlers (Handled inside commands like start.js)
-bot.on('callback_query', async (ctx) => {
-  const data = ctx.callbackQuery.data;
+// === ✅ Middleware to Guard Against ctx.from Errors ===
+bot.use(async (ctx, next) => {
+  if (!ctx.message || !ctx.from || !ctx.chat) {
+    console.warn("⚠️ Skipped update due to missing message/from/chat:", ctx.update);
+    return;
+  }
   try {
-    if (data === 'stake') {
-      await stakeCommand(ctx);
-    } else if (data === 'withdraw') {
-      await withdrawCommand(ctx);
-    } else if (data === 'balance') {
-      await balanceCommand(ctx);
-    } else if (data === 'premium') {
-      await premiumCommand(ctx);
-    } else if (data === 'referral') {
-      await referralCommand(ctx);
-    } else if (data === 'setwallet') {
-      await setWalletCommand(ctx);
-    }
-    await ctx.answerCbQuery(); // ✅ Close loading animation
-  } catch (error) {
-    console.error('❌ Callback Error:', error);
-    await ctx.reply('⚠️ Something went wrong. Please try again.');
+    await next();
+  } catch (err) {
+    console.error("❌ Unhandled bot error:", err);
   }
 });
 
-// ✅ Dummy Route for Keep-Alive
-app.get('/', (req, res) => {
-  res.send('🤖 TRX Staking Bot is up and running!');
+// === ✅ Connect MongoDB ===
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+}).then(() => {
+  console.log("✅ MongoDB connected");
+}).catch(err => {
+  console.error("❌ MongoDB connection error:", err);
 });
 
-// ✅ Load Cron Jobs
-require('./cronjobs')();
+// === ✅ Load Commands ===
+bot.start(require("./commands/start"));
+bot.command("balance", require("./commands/balance"));
+bot.command("referral", require("./commands/referral"));
+bot.command("setwallet", require("./commands/setwallet"));
+bot.command("premium", require("./commands/premium"));
+bot.command("withdraw", require("./commands/withdraw"));
+bot.command("help", require("./commands/help"));
+bot.command("stats", require("./commands/stats"));
 
-// ✅ Express Web Server
-const PORT = process.env.PORT || 10000;
+// === ✅ Cron Jobs ===
+cronJobs();
+console.log("✅ Cron job initialized...");
+
+// === ✅ Express Health Check ===
+app.get("/", (req, res) => {
+  res.send("Bot is running ✅");
+});
+
 app.listen(PORT, () => {
   console.log(`✅ Express running on port ${PORT}`);
 });
 
-// ✅ Launch the Telegram Bot
-bot.launch().then(() => {
-  console.log('✅ Bot launched and listening on Telegram');
-});
+// === ✅ Launch Bot ===
+bot.launch()
+  .then(() => console.log("🤖 Bot started successfully"))
+  .catch(err => console.error("❌ Bot launch error:", err));
 
-// ✅ Graceful Shutdown
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+// === ✅ Graceful Stop ===
+process.once("SIGINT", () => bot.stop("SIGINT"));
+process.once("SIGTERM", () => bot.stop("SIGTERM"));
