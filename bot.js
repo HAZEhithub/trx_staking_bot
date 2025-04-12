@@ -5,11 +5,11 @@ const fs = require("fs");
 const path = require("path");
 const express = require("express");
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
 // Debug env value
 console.log("✅ Loaded MONGO_URI:", process.env.MONGO_URI);
+
+// Create bot
+const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
 // MongoDB connect
 mongoose.connect(process.env.MONGO_URI)
@@ -19,15 +19,6 @@ mongoose.connect(process.env.MONGO_URI)
   .catch((err) => {
     console.error("❌ Mongo Error:", err);
   });
-
-// Setup bot in webhook mode
-const bot = new TelegramBot(process.env.BOT_TOKEN);
-bot.setWebHook(`${process.env.RENDER_EXTERNAL_URL}/bot${process.env.BOT_TOKEN}`);
-app.use(express.json());
-app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
-  bot.processUpdate(req.body);
-  res.sendStatus(200);
-});
 
 // Load commands
 fs.readdirSync("./commands").forEach(file => {
@@ -39,16 +30,19 @@ fs.readdirSync("./commands").forEach(file => {
   }
 });
 
-// Inline queries and scheduled jobs
+// Inline buttons and cron jobs
 require("./utils/cronJobs")(bot);
 require("./utils/inlineButtons")(bot);
 
-// Optional home route
-app.get("/", (req, res) => {
-  res.send("🔥 TRX Staking Bot is live via webhook!");
+// Express for Render health check
+const app = express();
+
+app.get("/healthz", (req, res) => {
+  res.status(200).send("OK");
 });
 
-// Start server
+// Start Express server on dynamic port
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
