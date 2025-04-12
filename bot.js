@@ -1,26 +1,23 @@
-require("dotenv").config(); // Always at the very top
+require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
 const mongoose = require("mongoose");
 const fs = require("fs");
-const path = require("path");
 const express = require("express");
+const app = express();
 
-// Debug env value
-console.log("✅ Loaded MONGO_URI:", process.env.MONGO_URI);
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const URL = process.env.RENDER_EXTERNAL_URL; // set this in Render env vars
 
-// Create bot
-const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
+const bot = new TelegramBot(BOT_TOKEN, { webHook: { port: process.env.PORT || 10000 } });
 
-// MongoDB connect
+// Set webhook to your Render URL + /bot<BOT_TOKEN>
+bot.setWebHook(`${URL}/bot${BOT_TOKEN}`);
+
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("✅ MongoDB Connected");
-  })
-  .catch((err) => {
-    console.error("❌ Mongo Error:", err);
-  });
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch(err => console.error("❌ Mongo Error:", err));
 
-// Load commands
+// Auto-load commands
 fs.readdirSync("./commands").forEach(file => {
   const command = require(`./commands/${file}`);
   if (typeof command === "function") {
@@ -30,19 +27,23 @@ fs.readdirSync("./commands").forEach(file => {
   }
 });
 
-// Inline buttons and cron jobs
+// Load buttons and cron
 require("./utils/cronJobs")(bot);
 require("./utils/inlineButtons")(bot);
 
-// Express for Render health check
-const app = express();
+// Webhook endpoint (must be POST)
+app.use(express.json());
+app.post(`/bot${BOT_TOKEN}`, (req, res) => {
+  bot.processUpdate(req.body);
+  res.sendStatus(200);
+});
 
+// Health check
 app.get("/healthz", (req, res) => {
   res.status(200).send("OK");
 });
 
-// Start Express server on dynamic port
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`✅ Express running on ${PORT}`);
 });
