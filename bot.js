@@ -28,31 +28,25 @@ bot.use(async (ctx, next) => {
     await next();
   } catch (err) {
     console.error("❌ Unhandled bot error:", err);
+    if (ctx.reply) {
+      ctx.reply("❌ Unexpected error occurred. Please try again later.");
+    }
   }
 });
 
 // === ✅ Command Handlers ===
-const start = require("./commands/start");
-const balance = require("./commands/balance");
-const referral = require("./commands/referral");
-const setwallet = require("./commands/setwallet");
-const premium = require("./commands/premium");
-const withdraw = require("./commands/withdraw");
-const help = require("./commands/help");
-const stats = require("./commands/stats");
+bot.start(require("./commands/start"));
+bot.command("balance", require("./commands/balance"));
+bot.command("referral", require("./commands/referral"));
+bot.command("setwallet", require("./commands/setwallet"));
+bot.command("premium", require("./commands/premium"));
+bot.command("withdraw", require("./commands/withdraw"));
+bot.command("help", require("./commands/help"));
+bot.command("stats", require("./commands/stats"));
 
-// === ✅ Register Commands ===
-bot.start((ctx) => start(ctx));
-bot.command("balance", (ctx) => balance(ctx));
-bot.command("referral", (ctx) => referral(ctx));
-bot.command("setwallet", (ctx) => setwallet(ctx));
-bot.command("premium", (ctx) => premium(ctx));
-bot.command("withdraw", (ctx) => withdraw(ctx));
-bot.command("help", (ctx) => help(ctx));
-bot.command("stats", (ctx) => stats(ctx));
-
-// === ✅ Inline Actions ===
+// === ✅ Inline Button Handlers ===
 bot.action("stake", async (ctx) => {
+  if (!ctx.from) return;
   await ctx.answerCbQuery();
   ctx.reply(
     "🚀 To stake TRX, send your desired amount to:\n`TBP6FPZPon1BqdTYcUpBKoMzk6729jpctN`\n\nOnce done, your stake will be tracked automatically.",
@@ -61,16 +55,19 @@ bot.action("stake", async (ctx) => {
 });
 
 bot.action("balance", async (ctx) => {
+  if (!ctx.from) return;
   await ctx.answerCbQuery();
   ctx.reply("📊 Checking your staking balance...\n\nUse /balance to see your current TRX stake and earnings.");
 });
 
 bot.action("withdraw", async (ctx) => {
+  if (!ctx.from) return;
   await ctx.answerCbQuery();
   ctx.reply("💸 To withdraw your earnings, please use the /withdraw command.");
 });
 
 bot.action("referral", async (ctx) => {
+  if (!ctx.from) return;
   await ctx.answerCbQuery();
   const userId = ctx.from.id;
   const referralLink = `https://t.me/${ctx.botInfo.username}?start=ref${userId}`;
@@ -78,6 +75,7 @@ bot.action("referral", async (ctx) => {
 });
 
 bot.action("premium", async (ctx) => {
+  if (!ctx.from) return;
   await ctx.answerCbQuery();
   ctx.reply(
     "🌟 Unlock premium to earn higher staking rewards!\n\n💰 Price: $45 (TRX equivalent)\n\nSend payment to:\n`TBP6FPZPon1BqdTYcUpBKoMzk6729jpctN`\n\nOnce paid, your premium will activate automatically.",
@@ -85,18 +83,20 @@ bot.action("premium", async (ctx) => {
   );
 });
 
-// === ✅ Cron Jobs ===
+// === ✅ Cron Jobs Initialization ===
 cronJobs();
 console.log("✅ Cron job initialized...");
 
-// === ✅ Launch Bot Using Long Polling (NO Webhook) ===
-bot.launch().then(() => {
-  console.log("🤖 Bot launched successfully with long polling ✅");
-}).catch(err => {
-  console.error("❌ Failed to launch bot:", err);
-});
+// === ✅ Launch Bot Using Long Polling ===
+bot.launch()
+  .then(() => {
+    console.log("🤖 Bot launched successfully with long polling ✅");
+  })
+  .catch(err => {
+    console.error("❌ Failed to launch bot:", err);
+  });
 
-// === ✅ Optional: Health Check Route ===
+// === ✅ Express Health Check Route ===
 app.get("/", (req, res) => {
   res.send("🤖 Bot is running and healthy ✅");
 });

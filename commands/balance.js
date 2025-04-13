@@ -1,39 +1,35 @@
-module.exports = (bot, ctx) => {
-  // Ensure ctx.from is available
-  if (!ctx.from) {
-    return ctx.reply('❌ Something went wrong. Please try again later.');
-  }
+const User = require("../models/User");
 
-  // Accessing the Telegram user ID
-  const userId = ctx.from.id;
+module.exports = async (ctx) => {
+  try {
+    if (!ctx.from) {
+      return ctx.reply('❌ Something went wrong. Please try again later.');
+    }
 
-  // Fetch the user's balance from the database
-  User.findOne({ telegramId: userId })
-    .then(user => {
-      if (user) {
-        // Send the user their balance info
-        ctx.reply(
-          `📊 Your balance:\n\n` +
-          `Staked: ${user.balance} TRX\n` +
-          `Wallet Balance: ${user.walletBalance} TRX\n` +
-          `Earnings: ${user.earnings} TRX`,
-          {
-            parse_mode: 'Markdown',
-            reply_markup: {
-              inline_keyboard: [
-                [{ text: "💰 Stake More", callback_data: "stake_more" }],
-                [{ text: "💸 Withdraw Earnings", callback_data: "withdraw" }]
-              ]
-            }
-          }
-        );
-      } else {
-        // If the user doesn't have balance info yet
-        ctx.reply('❌ You have no balance information available. Please start staking.');
+    const userId = ctx.from.id;
+    const user = await User.findOne({ telegramId: userId });
+
+    if (!user) {
+      return ctx.reply('❌ You have no balance information available. Please start staking.');
+    }
+
+    await ctx.reply(
+      `📊 *Your Balance*\n\n` +
+      `🔐 Staked: *${user.balance || 0} TRX*\n` +
+      `👛 Wallet Balance: *${user.walletBalance || 0} TRX*\n` +
+      `💸 Earnings: *${user.earnings || 0} TRX*`,
+      {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "💰 Stake More", callback_data: "stake" }],
+            [{ text: "💸 Withdraw Earnings", callback_data: "withdraw" }]
+          ]
+        }
       }
-    })
-    .catch(err => {
-      console.error('Error fetching user balance:', err);
-      ctx.reply('❌ Error fetching balance information. Please try again later.');
-    });
+    );
+  } catch (err) {
+    console.error('❌ Error fetching user balance:', err);
+    ctx.reply('❌ Error fetching balance information. Please try again later.');
+  }
 };
