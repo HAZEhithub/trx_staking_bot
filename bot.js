@@ -54,7 +54,10 @@ bot.command("stats", (ctx) => stats(ctx));
 // === ✅ Inline Actions ===
 bot.action("stake", async (ctx) => {
   await ctx.answerCbQuery();
-  ctx.reply("🚀 To stake TRX, send your desired amount to:\n`TBP6FPZPon1BqdTYcUpBKoMzk6729jpctN`\n\nOnce done, your stake will be tracked automatically.", { parse_mode: "Markdown" });
+  ctx.reply(
+    "🚀 To stake TRX, send your desired amount to:\n`TBP6FPZPon1BqdTYcUpBKoMzk6729jpctN`\n\nOnce done, your stake will be tracked automatically.",
+    { parse_mode: "Markdown" }
+  );
 });
 
 bot.action("balance", async (ctx) => {
@@ -70,13 +73,16 @@ bot.action("withdraw", async (ctx) => {
 bot.action("referral", async (ctx) => {
   await ctx.answerCbQuery();
   const userId = ctx.from.id;
-  const referralLink = `https://t.me/${ctx.me}?start=ref${userId}`;
+  const referralLink = `https://t.me/${ctx.botInfo.username}?start=ref${userId}`;
   ctx.reply(`🎯 Invite your friends and earn bonuses!\nHere is your referral link:\n${referralLink}`);
 });
 
 bot.action("premium", async (ctx) => {
   await ctx.answerCbQuery();
-  ctx.reply("🌟 Unlock premium to earn higher staking rewards!\n\n💰 Price: $45 (TRX equivalent)\n\nSend payment to:\n`TBP6FPZPon1BqdTYcUpBKoMzk6729jpctN`\n\nOnce paid, your premium will activate automatically.", { parse_mode: "Markdown" });
+  ctx.reply(
+    "🌟 Unlock premium to earn higher staking rewards!\n\n💰 Price: $45 (TRX equivalent)\n\nSend payment to:\n`TBP6FPZPon1BqdTYcUpBKoMzk6729jpctN`\n\nOnce paid, your premium will activate automatically.",
+    { parse_mode: "Markdown" }
+  );
 });
 
 // === ✅ Cron Jobs ===
@@ -86,6 +92,8 @@ console.log("✅ Cron job initialized...");
 // === ✅ Launch Bot Using Long Polling (NO Webhook) ===
 bot.launch().then(() => {
   console.log("🤖 Bot launched successfully with long polling ✅");
+}).catch(err => {
+  console.error("❌ Failed to launch bot:", err);
 });
 
 // === ✅ Optional: Health Check Route ===
