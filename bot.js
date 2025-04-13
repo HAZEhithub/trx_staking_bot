@@ -6,11 +6,19 @@ require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 10000;
-
-// === ✅ Initialize Bot ===
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-// === ✅ Middleware to Prevent ctx.from Errors ===
+// === ✅ MongoDB Connection ===
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+}).then(() => {
+  console.log("✅ MongoDB connected");
+}).catch(err => {
+  console.error("❌ MongoDB connection error:", err);
+});
+
+// === ✅ Bot Middleware ===
 bot.use(async (ctx, next) => {
   if (!ctx.message && !ctx.callbackQuery) {
     console.warn("⚠️ Skipped update due to missing message/from/chat:", ctx.update);
@@ -23,17 +31,7 @@ bot.use(async (ctx, next) => {
   }
 });
 
-// === ✅ MongoDB Connection ===
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => {
-  console.log("✅ MongoDB connected");
-}).catch(err => {
-  console.error("❌ MongoDB connection error:", err);
-});
-
-// === ✅ Import Command Handlers ===
+// === ✅ Command Handlers ===
 const start = require("./commands/start");
 const balance = require("./commands/balance");
 const referral = require("./commands/referral");
@@ -43,7 +41,7 @@ const withdraw = require("./commands/withdraw");
 const help = require("./commands/help");
 const stats = require("./commands/stats");
 
-// === ✅ Register Bot Commands ===
+// === ✅ Register Commands ===
 bot.start((ctx) => start(ctx));
 bot.command("balance", (ctx) => balance(ctx));
 bot.command("referral", (ctx) => referral(ctx));
@@ -53,7 +51,7 @@ bot.command("withdraw", (ctx) => withdraw(ctx));
 bot.command("help", (ctx) => help(ctx));
 bot.command("stats", (ctx) => stats(ctx));
 
-// === ✅ Inline Button Handlers ===
+// === ✅ Inline Actions ===
 bot.action("stake", async (ctx) => {
   await ctx.answerCbQuery();
   ctx.reply("🚀 To stake TRX, send your desired amount to:\n`TBP6FPZPon1BqdTYcUpBKoMzk6729jpctN`\n\nOnce done, your stake will be tracked automatically.", { parse_mode: "Markdown" });
@@ -85,19 +83,28 @@ bot.action("premium", async (ctx) => {
 cronJobs();
 console.log("✅ Cron job initialized...");
 
-// === ✅ Express Health Check Endpoint ===
+// === ✅ Webhook Endpoint ===
+app.use(express.json());
+app.post(`/webhook/${bot.token}`, (req, res) => {
+  bot.handleUpdate(req.body, res);
+});
+
+// === ✅ Health Check ===
 app.get("/", (req, res) => {
   res.send("🤖 Bot is running and healthy ✅");
 });
 
-app.listen(PORT, () => {
-  console.log(`✅ Express server running on port ${PORT}`);
+// === ✅ Start Server and Set Webhook ===
+app.listen(PORT, async () => {
+  const webhookURL = `https://trx-staking-bot.onrender.com/webhook/${bot.token}`;
+  try {
+    await bot.telegram.setWebhook(webhookURL);
+    console.log("✅ Webhook set successfully:", webhookURL);
+    console.log(`🚀 Express server running on port ${PORT}`);
+  } catch (err) {
+    console.error("❌ Failed to set webhook:", err);
+  }
 });
-
-// === ✅ Launch Bot ===
-bot.launch()
-  .then(() => console.log("🤖 Bot started successfully"))
-  .catch(err => console.error("❌ Bot launch error:", err));
 
 // === ✅ Graceful Shutdown ===
 process.once("SIGINT", () => bot.stop("SIGINT"));
