@@ -1,47 +1,104 @@
-const User = require('../models/User');
+const { Telegraf } = require("telegraf");
+const mongoose = require("mongoose");
+const express = require("express");
+const cronJobs = require("./cronjobs");
+require("dotenv").config();
 
-// TRX wallet address validation
-const isValidTRXAddress = (wallet) => {
-  const trxWalletRegex = /^T[a-zA-Z0-9]{33}$/;
-  return trxWalletRegex.test(wallet);
-};
+const app = express();
+const PORT = process.env.PORT || 10000;
 
-module.exports = async (ctx) => {
-  const userId = ctx.from.id;
-  const wallet = ctx.message.text.split(' ')[1]; // /setwallet WALLET_ADDRESS
+// === ✅ Initialize Bot ===
+const bot = new Telegraf(process.env.BOT_TOKEN);
 
-  if (!wallet) {
-    return ctx.reply('❌ Usage: /setwallet YOUR_TRX_WALLET');
+// === ✅ Middleware to Prevent ctx.from Errors ===
+bot.use(async (ctx, next) => {
+  if (!ctx.message && !ctx.callbackQuery) {
+    console.warn("⚠️ Skipped update due to missing message/from/chat:", ctx.update);
+    return;
   }
-
-  if (!isValidTRXAddress(wallet)) {
-    return ctx.reply('❌ Invalid TRX wallet address. It must start with "T" and be 34 characters long.');
-  }
-
-  console.log(`User ${userId} is setting wallet to: ${wallet}`);
-
   try {
-    const user = await User.findOneAndUpdate(
-      { telegramId: userId },
-      { wallet },
-      { upsert: true, new: true }
-    );
-
-    ctx.reply(
-      `✅ Your TRX wallet address has been set to:\n` +
-      `\`\`\`\n${wallet}\n\`\`\`\nMake sure it's correct for future withdrawals.`,
-      {
-        parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: "💰 Stake More", callback_data: "stake" }],
-            [{ text: "💸 Withdraw Earnings", callback_data: "withdraw" }]
-          ]
-        }
-      }
-    );
+    await next();
   } catch (err) {
-    console.error('Error saving wallet address:', err);
-    ctx.reply('❌ Error saving wallet address. Please try again later.');
+    console.error("❌ Unhandled bot error:", err);
   }
-};
+});
+
+// === ✅ MongoDB Connection ===
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+}).then(() => {
+  console.log("✅ MongoDB connected");
+}).catch(err => {
+  console.error("❌ MongoDB connection error:", err);
+});
+
+// === ✅ Import Command Handlers ===
+const start = require("./commands/start");
+const balance = require("./commands/balance");
+const referral = require("./commands/referral");
+const setwallet = require("./commands/setwallet");
+const premium = require("./commands/premium");
+const withdraw = require("./commands/withdraw");
+const help = require("./commands/help");
+const stats = require("./commands/stats");
+
+// === ✅ Register Bot Commands ===
+bot.start((ctx) => start(ctx));
+bot.command("balance", (ctx) => balance(ctx));
+bot.command("referral", (ctx) => referral(ctx));
+bot.command("setwallet", (ctx) => setwallet(ctx));
+bot.command("premium", (ctx) => premium(ctx));
+bot.command("withdraw", (ctx) => withdraw(ctx));
+bot.command("help", (ctx) => help(ctx));
+bot.command("stats", (ctx) => stats(ctx));
+
+// === ✅ Inline Button Handlers ===
+bot.action("stake", async (ctx) => {
+  await ctx.answerCbQuery();
+  ctx.reply("🚀 To stake TRX, send your desired amount to:\n`TBP6FPZPon1BqdTYcUpBKoMzk6729jpctN`\n\nOnce done, your stake will be tracked automatically.", { parse_mode: "Markdown" });
+});
+
+bot.action("balance", async (ctx) => {
+  await ctx.answerCbQuery();
+  ctx.reply("📊 Checking your staking balance...\n\nUse /balance to see your current TRX stake and earnings.");
+});
+
+bot.action("withdraw", async (ctx) => {
+  await ctx.answerCbQuery();
+  ctx.reply("💸 To withdraw your earnings, please use the /withdraw command.");
+});
+
+bot.action("referral", async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  const referralLink = `https://t.me/${ctx.me}?start=ref${userId}`;
+  ctx.reply(`🎯 Invite your friends and earn bonuses!\nHere is your referral link:\n${referralLink}`);
+});
+
+bot.action("premium", async (ctx) => {
+  await ctx.answerCbQuery();
+  ctx.reply("🌟 Unlock premium to earn higher staking rewards!\n\n💰 Price: $45 (TRX equivalent)\n\nSend payment to:\n`TBP6FPZPon1BqdTYcUpBKoMzk6729jpctN`\n\nOnce paid, your premium will activate automatically.", { parse_mode: "Markdown" });
+});
+
+// === ✅ Cron Jobs ===
+cronJobs();
+console.log("✅ Cron job initialized...");
+
+// === ✅ Express Health Check Endpoint ===
+app.get("/", (req, res) => {
+  res.send("🤖 Bot is running and healthy ✅");
+});
+
+app.listen(PORT, () => {
+  console.log(`✅ Express server running on port ${PORT}`);
+});
+
+// === ✅ Launch Bot ===
+bot.launch()
+  .then(() => console.log("🤖 Bot started successfully"))
+  .catch(err => console.error("❌ Bot launch error:", err));
+
+// === ✅ Graceful Shutdown ===
+process.once("SIGINT", () => bot.stop("SIGINT"));
+process.once("SIGTERM", () => bot.stop("SIGTERM"));
