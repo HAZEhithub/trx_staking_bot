@@ -83,29 +83,16 @@ bot.action("premium", async (ctx) => {
 cronJobs();
 console.log("✅ Cron job initialized...");
 
-// === ✅ Webhook Endpoint ===
-app.use(express.json());
-app.post(`/webhook/${bot.token}`, (req, res) => {
-  bot.handleUpdate(req.body, res);
+// === ✅ Launch Bot Using Long Polling (NO Webhook) ===
+bot.launch().then(() => {
+  console.log("🤖 Bot launched successfully with long polling ✅");
 });
 
-// === ✅ Health Check ===
+// === ✅ Optional: Health Check Route ===
 app.get("/", (req, res) => {
   res.send("🤖 Bot is running and healthy ✅");
 });
 
-// === ✅ Start Server and Set Webhook ===
-app.listen(PORT, async () => {
-  const webhookURL = `https://trx-staking-bot.onrender.com/webhook/${bot.token}`;
-  try {
-    await bot.telegram.setWebhook(webhookURL);
-    console.log("✅ Webhook set successfully:", webhookURL);
-    console.log(`🚀 Express server running on port ${PORT}`);
-  } catch (err) {
-    console.error("❌ Failed to set webhook:", err);
-  }
+app.listen(PORT, () => {
+  console.log(`🚀 Express server running on port ${PORT}`);
 });
-
-// === ✅ Graceful Shutdown ===
-process.once("SIGINT", () => bot.stop("SIGINT"));
-process.once("SIGTERM", () => bot.stop("SIGTERM"));
