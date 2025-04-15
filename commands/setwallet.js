@@ -7,7 +7,16 @@ const isValidTRXAddress = (wallet) => {
 };
 
 module.exports = async (ctx) => {
-  try {
+  // Handle callback from button (🔄 Update Wallet)
+  if (ctx.callbackQuery) {
+    await ctx.answerCbQuery();
+    return ctx.reply('🔄 Please send your TRX wallet address in the format:\n\n`/setwallet YOUR_WALLET_ADDRESS`', {
+      parse_mode: 'Markdown'
+    });
+  }
+
+  // Handle command /setwallet WALLET
+  if (ctx.message && ctx.message.text.startsWith('/setwallet')) {
     const userId = ctx.from.id;
     const wallet = ctx.message.text.split(' ')[1]; // /setwallet WALLET
 
@@ -25,10 +34,8 @@ module.exports = async (ctx) => {
       { upsert: true, new: true }
     );
 
-    await ctx.reply(
-      `✅ Your TRX wallet address has been set to:\n` +
-      `\`\`\`\n${wallet}\n\`\`\`\n` +
-      `Make sure it's correct for future withdrawals.`,
+    return ctx.reply(
+      `✅ Your TRX wallet address has been set to:\n\`\`\`\n${wallet}\n\`\`\`\nMake sure it's correct for future withdrawals.`,
       {
         parse_mode: 'Markdown',
         reply_markup: {
@@ -39,8 +46,5 @@ module.exports = async (ctx) => {
         }
       }
     );
-  } catch (err) {
-    console.error('❌ Error saving wallet address:', err);
-    ctx.reply('❌ Something went wrong while saving your wallet address.');
   }
 };

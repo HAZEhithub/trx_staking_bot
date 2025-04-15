@@ -83,6 +83,9 @@ bot.action("premium", async (ctx) => {
   );
 });
 
+// ✅ Added: Handle "🔄 Update Wallet" inline button
+bot.action("setwallet", require("./commands/setwallet"));
+
 // === ✅ Cron Jobs Initialization ===
 cronJobs();
 console.log("✅ Cron job initialized...");
